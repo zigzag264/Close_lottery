@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双色球 模型预测</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20261028a">
+</head>
+<body>
+    <!-- 复用图标定义（导航等重复图标） -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+        <symbol id="icon-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+        </symbol>
+        <symbol id="icon-bars" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+        </symbol>
+        <symbol id="icon-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </symbol>
+    </svg>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">加载数据中...</p>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="main-app" style="display: none;">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="navbar-container">
+                <div class="navbar-content">
+                    <div class="navbar-brand">
+                        <div class="navbar-logo">🎟️</div>
+                        <div class="navbar-title-wrapper">
+                            <span class="navbar-title">
+                                双色球<span class="highlight">模型</span>预测
+                            </span>
+                            <span class="navbar-subtitle">Double Color Ball</span>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Nav -->
+                    <div class="nav-items">
+                        <button class="nav-item active" data-tab="prediction">
+                            <svg><use href="#icon-grid"/></svg>
+                            最新预测
+                        </button>
+                        <button class="nav-item" data-tab="analysis">
+                            <svg><use href="#icon-bars"/></svg>
+                            历史分析
+                        </button>
+                        <button class="nav-item" data-tab="ranking">
+                            <svg><use href="#icon-trophy"/></svg>
+                            模型排行
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Mobile Bottom Nav -->
+        <div class="mobile-nav">
+            <div class="mobile-nav-content">
+                <button class="mobile-nav-item active" data-tab="prediction">
+                    <svg><use href="#icon-grid"/></svg>
+                    <span>最新预测</span>
+                </button>
+                <button class="mobile-nav-item" data-tab="analysis">
+                    <svg><use href="#icon-bars"/></svg>
+                    <span>历史分析</span>
+                </button>
+                <button class="mobile-nav-item" data-tab="ranking">
+                    <svg><use href="#icon-trophy"/></svg>
+                    <span>模型排行</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Tab: Prediction Dashboard -->
+            <div class="tab-content active" data-tab="prediction">
+                <!-- Hero Banner -->
+                <div class="hero-banner">
+                    <div class="hero-banner-content">
+                        <div class="hero-banner-grid">
+                            <div>
+                                <div class="hero-banner-badge">
+                                    <span class="hero-badge-tag">Next Draw</span>
+                                    <span class="hero-badge-countdown" id="heroCountdown">—</span>
+                                </div>
+                                <h2 class="hero-title">
+                                    第 <span id="heroPeriod">-</span> 期
+                                    <span class="hero-title-gradient">预测发布</span>
+                                </h2>
+                                <div class="hero-meta">
+                                    <div class="hero-meta-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+                                        </svg>
+                                        <span id="heroDateDisplay">-</span>
+                                    </div>
+                                    <div class="hero-meta-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                        </svg>
+                                        <span id="heroDrawTime">21:15 开奖</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="hero-date-badge" id="heroPredictionDate">-</div>
+                                <div class="hero-date-label">Model Updated</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 更新数据按钮 -->
+                    <div class="hero-update-area">
+                        <button class="update-btn" id="updateDataBtn" type="button" title="运行爬虫更新开奖数据，并重新生成 AI 大模型预测">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
+                            </svg>
+                            <span id="updateBtnText">更新数据</span>
+                        </button>
+                        <div class="update-status" id="updateStatus"></div>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="info-card">
+                    <div class="info-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a4 4 0 0 1 4 4c0 2-2 3-2 5v2h-4v-2c0-2-2-3-2-5a4 4 0 0 1 4-4Z"/><path d="M9 18h6"/><path d="M10 22h4"/>
+                        </svg>
+                    </div>
+                    <div class="info-card-content">
+                        <h3 class="info-card-title">本期预测策略说明</h3>
+                        <p>4 个 AI 大模型（Kimi K2.5、GLM-5、Qwen3.5 Flash、DeepSeek V4.1 Flash）基于最近 30 期开奖数据独立推理，各输出 5 种策略（热号延续、冷号回补、区间均衡、奇偶平衡、和值回归），共 20 组预测，从不同角度捕捉号码的趋势与均衡。</p>
+                    </div>
+                </div>
+
+                <!-- Models Grid -->
+                <div class="models-grid" id="modelsGrid"></div>
+
+                <!-- Disclaimer -->
+                <div class="disclaimer-card">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+                    </svg>
+                    <span>预测结果仅供参考，不代表最终开奖结果</span>
+                </div>
+
+                </div>
+
+            <!-- Tab: Analysis -->
+            <div class="tab-content" data-tab="analysis">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+                        </svg>
+                    </div>
+                    <h2 class="section-title">数据趋势分析</h2>
+                </div>
+                <p class="section-subtitle">基于最近历史开奖数据分析</p>
+
+                <!-- Statistics Cards -->
+                <div class="stats-cards-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-icon red">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                            </svg>
+                        </div>
+                        <div class="stat-card-content">
+                            <div class="stat-card-label">数据样本</div>
+                            <div class="stat-card-value" id="statTotalDraws">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+                            </svg>
+                        </div>
+                        <div class="stat-card-content">
+                            <div class="stat-card-label">最热红球</div>
+                            <div class="stat-card-value" id="statHottestRed">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon purple">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 3v18h18"/><path d="m7 15 5-5 5 5"/>
+                            </svg>
+                        </div>
+                        <div class="stat-card-content">
+                            <div class="stat-card-label">最热蓝球</div>
+                            <div class="stat-card-value" id="statHottestBlue">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon yellow">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v20M2 12h20"/>
+                            </svg>
+                        </div>
+                        <div class="stat-card-content">
+                            <div class="stat-card-label">平均和值</div>
+                            <div class="stat-card-value" id="statAvgSum">-</div>
+                        </div>
+                    </div>
+                </div>
+            <!-- 历史开奖号码一览 -->
+                <div class="history-section">
+                    <h3 class="history-section-title">历史开奖号码一览</h3>
+                    <div class="history-table-container">
+                        <div class="history-table-scroll">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>期号</th>
+                                        <th>开奖日期</th>
+                                        <th>开奖号码</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 命中记录（紧凑摘要） -->
+                <div class="history-section">
+                    <div class="history-section-header">
+                        <h3 class="history-section-title">详细命中记录</h3>
+                        <span class="history-section-badge">Verified Data</span>
+                    </div>
+                    <div id="accuracyCardsContainer"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Model Ranking -->
+            <div class="tab-content" data-tab="ranking">
+                <div class="section-header ranking-section">
+                    <div class="section-icon">
+                        <svg><use href="#icon-trophy"/></svg>
+                    </div>
+                    <h2 class="section-title">命中排行</h2>
+                </div>
+                <p class="section-subtitle">按模型与策略统计历史命中（多时间窗口）</p>
+
+                <div class="ranking-container" id="rankingContainer"></div>
+
+                <div class="section-header ranking-section">
+                    <div class="section-icon">
+                        <svg><use href="#icon-trophy"/></svg>
+                    </div>
+                    <h2 class="section-title">分组统计</h2>
+                </div>
+                <p class="section-subtitle">按模型分组统计命中（全部历史）</p>
+                <div class="ranking-container" id="groupedRankingContainer"></div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-copyright">© 2025 Double Color Ball AI 大模型预测系统.</p>
+                <p class="footer-disclaimer">仅供娱乐与统计分析，请理性购彩</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/data-loader.js?v=20261028a"></script>
+    <script src="js/components.js?v=20261028a"></script>
+    <script src="js/app.js?v=20261028a"></script>
+</body>
+</html>
